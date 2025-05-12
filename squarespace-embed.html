@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Builder - Bot or Not</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: transparent;
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        main {
+            display: flex; 
+            flex-direction: column;
+            gap: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .sidebar {
+            /* Sidebar takes full width when stacked */
+        }
+
+        .sidebar h2 {
+            color: #2c3e50;
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .trigger-items, .action-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .trigger-item, .action-item {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: move;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .trigger-item:hover, .action-item:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .workflow-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .workflow-canvas {
+            min-height: 300px;
+            border: 2px dashed #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #ffffff;
+            position: relative;
+        }
+        
+        .workflow-item {
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            background: #e0e0e0;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: grab;
+            position: absolute;
+            border: 1px solid #ccc;
+        }
+
+        .preview-area {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .preview-area h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+
+        .preview-content {
+            padding: 1rem;
+            background: white;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            min-height: 50px;
+        }
+
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        /* Icons (using pseudo-elements) */
+        .icon-email::before { content: "📧"; margin-right: 0.3em; }
+        .icon-file::before { content: "📄"; margin-right: 0.3em; }
+        .icon-clock::before { content: "⏰"; margin-right: 0.3em; }
+        .icon-move::before { content: "🔄"; margin-right: 0.3em; }
+        .icon-notify::before { content: "🔔"; margin-right: 0.3em; }
+        .icon-report::before { content: "📊"; margin-right: 0.3em; }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            main {
+                flex-direction: row;
+                padding: 2rem;
+                gap: 2rem;
+            }
+            .sidebar {
+                flex: 0 0 250px;
+            }
+            .workflow-area {
+                flex-grow: 1;
+                gap: 2rem;
+            }
+            .workflow-canvas {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <main>
+            <div class="sidebar">
+                <div class="triggers-section">
+                    <h2>Triggers</h2>
+                    <div class="trigger-items">
+                        <div class="trigger-item" draggable="true" data-type="email">
+                            <i class="icon-email"></i>
+                            <span>Email Received</span>
+                        </div>
+                        <div class="trigger-item" draggable="true" data-type="file">
+                            <i class="icon-file"></i>
+                            <span>New File</span>
+                        </div>
+                        <div class="trigger-item" draggable="true" data-type="time">
+                            <i class="icon-clock"></i>
+                            <span>Time Event</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-section">
+                    <h2>Actions</h2>
+                    <div class="action-items">
+                        <div class="action-item" draggable="true" data-type="move">
+                            <i class="icon-move"></i>
+                            <span>Move Files</span>
+                        </div>
+                        <div class="action-item" draggable="true" data-type="notify">
+                            <i class="icon-notify"></i>
+                            <span>Send Notification</span>
+                        </div>
+                        <div class="action-item" draggable="true" data-type="report">
+                            <i class="icon-report"></i>
+                            <span>Generate Report</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="workflow-area">
+                <div class="workflow-canvas"></div>
+                <div class="preview-area">
+                    <h3>Workflow Preview</h3>
+                    <div class="preview-content">Drag items from the sidebar to create your workflow</div>
+                </div>
+            </div>
+        </main>
+
+        <div class="tooltip" id="tooltip">
+            <div class="tooltip-content"></div>
+        </div>
+    </div>
+    <script>
+        // Initialize variables
+        const workflowCanvas = document.querySelector('.workflow-canvas');
+        const tooltip = document.getElementById('tooltip');
+        let draggedItemElement = null; // Stores the actual DOM element being dragged
+
+        // Add tooltips to items
+        document.querySelectorAll('.trigger-item, .action-item').forEach(item => {
+            item.addEventListener('mouseenter', (e) => {
+                const itemType = item.dataset.type;
+                let tooltipText = '';
+                switch (itemType) {
+                    case 'email': tooltipText = 'Trigger: An email is received.'; break;
+                    case 'file': tooltipText = 'Trigger: A new file is detected.'; break;
+                    case 'time': tooltipText = 'Trigger: A specific time or interval occurs.'; break;
+                    case 'move': tooltipText = 'Action: Move files to a specified location.'; break;
+                    case 'notify': tooltipText = 'Action: Send a notification.'; break;
+                    case 'report': tooltipText = 'Action: Generate a report.'; break;
+                    default: tooltipText = 'Draggable item.';
+                }
+                
+                tooltip.querySelector('.tooltip-content').textContent = tooltipText;
+                tooltip.classList.add('visible');
+                
+                const rect = item.getBoundingClientRect();
+                tooltip.style.left = `${rect.right + 10}px`; 
+                tooltip.style.top = `${rect.top + (rect.height / 2) - (tooltip.offsetHeight / 2)}px`;
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible');
+            });
+
+            // Drag and drop functionality for sidebar items
+            item.addEventListener('dragstart', (e) => {
+                draggedItemElement = item; // Store the original item being dragged
+                e.dataTransfer.setData('text/plain', item.dataset.type);
+                e.dataTransfer.setData('text/html', item.innerHTML); // Pass innerHTML for reconstruction
+                e.dataTransfer.effectAllowed = 'copy';
+            });
+        });
+
+        workflowCanvas.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Necessary to allow dropping
+            e.dataTransfer.dropEffect = 'copy';
+            workflowCanvas.style.borderColor = '#4CAF50'; // Highlight drop zone
+        });
+
+        workflowCanvas.addEventListener('dragleave', () => {
+            workflowCanvas.style.borderColor = '#e9ecef'; // Reset border color
+        });
+
+        workflowCanvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            workflowCanvas.style.borderColor = '#e9ecef';
+            
+            if (!draggedItemElement) return;
+
+            const type = e.dataTransfer.getData('text/plain');
+            const originalItemHTML = e.dataTransfer.getData('text/html');
+
+            const newItem = document.createElement('div');
+            newItem.className = 'workflow-item';
+            newItem.innerHTML = originalItemHTML; // Use the HTML from the dragged item
+            newItem.dataset.type = type;
+            newItem.draggable = true; // Make the new item draggable within the canvas
+
+            // Position the item where it was dropped relative to the canvas
+            const canvasRect = workflowCanvas.getBoundingClientRect();
+            let x = e.clientX - canvasRect.left - (newItem.offsetWidth / 2); // Center horizontally on drop
+            let y = e.clientY - canvasRect.top - (newItem.offsetHeight / 2);  // Center vertically on drop
+            
+            // Constrain to canvas boundaries
+            x = Math.max(0, Math.min(x, canvasRect.width - newItem.offsetWidth));
+            y = Math.max(0, Math.min(y, canvasRect.height - newItem.offsetHeight));
+
+            newItem.style.left = `${x}px`;
+            newItem.style.top = `${y}px`;
+            
+            workflowCanvas.appendChild(newItem);
+            
+            // Add drag functionality for items within the canvas
+            newItem.addEventListener('dragstart', (ev_move) => {
+                draggedItemElement = newItem;
+                ev_move.dataTransfer.setData('text/plain', 'move-existing');
+                ev_move.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => {
+                    newItem.style.opacity = '0.5';
+                }, 0);
+            });
+
+            newItem.addEventListener('dragend', (ev_move) => {
+                setTimeout(() => {
+                    newItem.style.opacity = '1';
+                    draggedItemElement = null;
+                }, 0);
+            });
+
+            if (e.dataTransfer.getData('text/plain') === 'move-existing') {
+                const targetItem = draggedItemElement;
+                if(targetItem) {
+                    targetItem.style.left = `${x}px`;
+                    targetItem.style.top = `${y}px`;
+                }
+            } else {
+                workflowCanvas.appendChild(newItem);
+            }
+
+            updatePreview();
+            draggedItemElement = null;
+        });
+
+        // Update workflow preview
+        function updatePreview() {
+            const previewContent = document.querySelector('.preview-content');
+            const itemsInCanvas = workflowCanvas.querySelectorAll('.workflow-item');
+            
+            if (itemsInCanvas.length === 0) {
+                previewContent.textContent = 'Drag items from the sidebar to create your workflow';
+                return;
+            }
+            
+            let previewText = 'Workflow Steps:\n';
+            itemsInCanvas.forEach((item, index) => {
+                const textSpan = item.querySelector('span');
+                if (textSpan) {
+                    previewText += `${index + 1}. ${textSpan.textContent}\n`;
+                }
+            });
+            
+            previewContent.textContent = previewText;
+        }
+
+        // Add delete functionality by double-clicking an item in the canvas
+        workflowCanvas.addEventListener('dblclick', (e) => {
+            let target = e.target;
+            while (target && !target.classList.contains('workflow-item') && target !== workflowCanvas) {
+                target = target.parentElement;
+            }
+
+            if (target && target.classList.contains('workflow-item')) {
+                target.remove();
+                updatePreview();
+            }
+        });
+
+        // Initialize preview
+        updatePreview();
+    </script>
+</body>
+</html>
